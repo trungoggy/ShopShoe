@@ -1,55 +1,119 @@
-# ShopShoe chạy với SQLite
+# ShopShoe
 
-Yêu cầu Node.js 20.13 hoặc bản Node LTS hỗ trợ better-sqlite3 đã cài.
+Website bán giày, có trang mua hàng và trang quản trị sản phẩm, tài khoản, đơn hàng.
 
-Tại thư mục gốc, chạy `npm install` và `npm install --prefix frontend` khi thiết lập máy mới.
-Chạy `npm run dev`, mở http://localhost:3000.
-Cơ sở dữ liệu mới được tạo và nạp dữ liệu mẫu ở lần chạy đầu tiên.
+## Chuẩn bị
 
-Tài khoản quản trị ban đầu là `admin@shopshoe.local`, mật khẩu `ShopShoe@2026`.
-Đổi mật khẩu trong hồ sơ nếu sử dụng ngoài buổi thực hành cá nhân.
+- Node.js 20.13.0 đã được dùng để chạy và kiểm tra dự án.
+- Mở thư mục ShopShoe trong VS Code. Các lệnh dưới đây chạy từ terminal ở thư mục gốc, nơi có `package.json`.
 
-Dữ liệu lưu tại `data/shopshoe.sqlite`. Dừng máy chủ rồi sao lưu cả thư mục `data` và `uploads`.
-Khởi động lại giữ nguyên dữ liệu. `npm run data:import` chỉ tạo dữ liệu khi database trống.
-Tài khoản và dữ liệu trên MongoDB Atlas cũ chưa được chuyển vào database mới.
-Các size và màu ban đầu là dữ liệu mẫu phục vụ thực hành, có thể sửa ở quản trị sản phẩm.
-Giỏ hàng cũ chưa chọn biến thể được làm trống khi mở phiên bản này, cần chọn lại size/màu.
+## Cài đặt lần đầu
 
-MVP dùng COD hoặc chuyển khoản giả lập do quản trị viên xác nhận thủ công.
-Chọn biến thể, thêm giỏ, đăng nhập, nhập thông tin giao hàng, chọn thanh toán và đặt đơn.
-Máy chủ tính lại giá từ dữ liệu sản phẩm và trừ kho trong giao dịch SQLite khi tạo đơn.
-Hủy đơn chưa thanh toán ở trạng thái chờ/chuẩn bị phải ghi lý do và hoàn kho đúng một lần.
-Trạng thái đi từ chờ xác nhận sang chuẩn bị, đang giao rồi đã giao.
-Đơn COD được ghi nhận thu tiền khi đã giao. Đơn chuyển khoản phải xác nhận thu tiền trước khi hoàn tất.
-Đơn đã thanh toán muốn hủy cần quy trình hoàn tiền, nằm ngoài MVP hiện tại.
-Đánh giá chỉ dành cho người đã nhận sản phẩm. Doanh thu quản trị tính từ đơn đã giao và đã thu tiền.
-Giá USD, phí ship miễn khi tiền hàng trên 100 USD, còn lại 10 USD, thuế mô phỏng 15% giữ theo quy tắc của giao diện ban đầu.
-Chức năng danh mục/thương hiệu được nhập trực tiếp trong sản phẩm, chưa có màn hình CRUD danh mục riêng.
-Đây là bản demo trên máy, server chỉ lắng nghe localhost.
-
-Khi hoàn thiện báo cáo, thống nhất SQLite ở chương 1 và 4, mô tả các bảng users/products/variants/orders/order_items/reviews,
-thay mô tả PayPal bằng COD và chuyển khoản giả lập. Chương kiểm thử ghi nhận kết quả kiểm tra thực tế.
-http://localhost:3000/
-Email admin@shopshoe.local
-Mật khẩu ShopShoe@2026
-Giao diện dùng Vite. Tệp HTML đầu vào là `frontend/index.html`. `npm run build --prefix frontend` tạo bản dựng tại `frontend/build`.
-
-## Cài đặt sau khi tải từ GitHub
-
-Tại thư mục gốc, chạy các lệnh sau trong PowerShell.
+Cài thư viện cho backend và frontend.
 
 ```powershell
 npm ci
 npm ci --prefix frontend
+```
+
+Nếu chưa có `.env`, tạo tệp từ cấu hình mẫu.
+
+```powershell
 Copy-Item .env.example .env
 ```
 
-Mở .env và thay JWT_SECRET bằng chuỗi ngẫu nhiên của riêng bạn trước khi chạy.
-Có thể tạo chuỗi bằng lệnh sau rồi sao chép kết quả vào JWT_SECRET.
+Mở `.env` và điền các giá trị sau. Thay `chuoi_bi_mat_cua_ban` bằng chuỗi riêng của bạn.
+
+```dotenv
+NODE_ENV=development
+PORT=5000
+SQLITE_FILE=data/shopshoe.sqlite
+JWT_SECRET=chuoi_bi_mat_cua_ban
+PAGINATION_LIMIT=8
+```
+
+Có thể tạo chuỗi cho `JWT_SECRET` bằng lệnh sau rồi chép kết quả vào `.env`.
 
 ```powershell
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+## Chạy website
+
+```powershell
 npm run dev
 ```
 
-Database và ảnh tải lên được lưu riêng trên mỗi máy. Khi chuyển máy, dùng bản sao lưu dữ liệu nếu cần tiếp tục sử dụng dữ liệu cũ.
+Mở [http://localhost:3000](http://localhost:3000). Giữ terminal đang chạy trong lúc sử dụng. Nhấn `Ctrl+C` khi muốn dừng.
+
+Lần đầu chạy với cơ sở dữ liệu mới, chương trình tự tạo bảng và thêm sản phẩm mẫu. Những lần sau tiếp tục dùng dữ liệu đã lưu.
+
+## Tài khoản quản trị
+
+Tài khoản được tạo khi khởi tạo cơ sở dữ liệu mới.
+
+| Thông tin | Giá trị |
+| --- | --- |
+| Email | `admin@shopshoe.local` |
+| Mật khẩu | `ShopShoe@2026` |
+
+Sau khi đăng nhập, vào hồ sơ để đổi mật khẩu. Nếu đã đổi trước đó, dùng mật khẩu bạn đã đặt.
+
+## Mua hàng
+
+1. Tìm giày theo tên hoặc chọn thương hiệu, danh mục, size, màu và khoảng giá. Bấm **Áp dụng bộ lọc** để xem kết quả.
+2. Mở sản phẩm, chọn size, màu và số lượng rồi thêm vào giỏ.
+3. Kiểm tra giỏ hàng, đăng nhập hoặc đăng ký tài khoản.
+4. Nhập họ tên, số điện thoại và địa chỉ nhận hàng.
+5. Chọn phương thức thanh toán, kiểm tra tổng tiền và xác nhận đặt hàng.
+6. Vào hồ sơ để xem lịch sử đơn. Mở chi tiết đơn để theo dõi trạng thái.
+
+Có thể gửi đánh giá sản phẩm sau khi đơn chứa sản phẩm đó đã được giao. Mỗi tài khoản đánh giá một lần cho mỗi sản phẩm.
+
+## Quản trị
+
+Đăng nhập bằng tài khoản quản trị rồi mở mục tương ứng trong menu.
+
+- **Sản phẩm** — thêm sản phẩm, sửa thông tin, tải ảnh và nhập tồn kho cho từng size/màu. Khi xóa sản phẩm, sản phẩm được ngừng bán và lịch sử đơn vẫn được giữ.
+- **Đơn hàng** — xem chi tiết và chuyển lần lượt từ chờ xác nhận sang chuẩn bị, đang giao, đã giao. Khi hủy đơn chưa thanh toán ở bước chờ hoặc chuẩn bị, cần nhập lý do. Số lượng đã đặt được trả lại kho.
+- **Người dùng** — sửa thông tin, phân quyền hoặc khóa/mở khóa tài khoản. Thao tác xóa khách hàng hiện được xử lý bằng cách khóa tài khoản để giữ lịch sử đơn.
+
+Tồn kho được trừ khi tạo đơn thành công. Đơn đã xác nhận thanh toán chưa hỗ trợ hủy trực tiếp trong phiên bản này.
+
+## Thanh toán và cách tính tiền
+
+- **COD** — thanh toán khi nhận hàng. Hệ thống ghi nhận đã thu tiền khi quản trị chuyển đơn sang đã giao.
+- **Chuyển khoản giả lập** — quản trị xác nhận đã thu tiền trước khi hoàn tất giao hàng. Chức năng dùng để thực hành quy trình, chưa kết nối ngân hàng.
+
+Giá hiển thị theo USD. Tiền hàng trên 100 USD được miễn phí giao hàng, các đơn còn lại có phí 10 USD. Thuế mô phỏng là 15% tiền hàng. Máy chủ tính lại tổng tiền khi tạo đơn.
+
+## Lưu và sao lưu dữ liệu
+
+Dữ liệu nằm trong thư mục `data`, ảnh tải lên nằm trong `uploads`. Dừng chương trình trước khi sao lưu cả hai thư mục. Khi chuyển máy, chép chúng vào đúng vị trí trong dự án trước khi chạy.
+
+GitHub lưu mã nguồn và ảnh sản phẩm mẫu. Tệp `.env`, cơ sở dữ liệu và ảnh tải lên được lưu riêng trên từng máy.
+
+## Kiểm tra và tạo bản dựng
+
+```powershell
+# Kiểm thử giao diện
+npm test --prefix frontend -- --run
+
+# Tạo bản dựng tại frontend/build
+npm run build --prefix frontend
+
+# Kiểm tra cảnh báo bảo mật của thư viện
+npm audit
+npm audit --prefix frontend
+```
+
+## Khi gặp lỗi
+
+| Hiện tượng | Cách kiểm tra |
+| --- | --- |
+| Không mở được trang | Kiểm tra terminal còn chạy `npm run dev` và mở đúng cổng 3000. |
+| Báo cổng đang được sử dụng | Dừng phiên ShopShoe đang chạy ở terminal khác rồi chạy lại. |
+| Báo thiếu `JWT_SECRET` | Kiểm tra `.env` nằm ở thư mục gốc và đã điền `JWT_SECRET`. |
+| Bộ lọc không có kết quả | Bấm **Xóa bộ lọc**, kiểm tra cả từ khóa tìm kiếm và thuộc tính đã nhập trong sản phẩm. |
+| Không đặt được hàng | Kiểm tra số lượng còn lại của size/màu và điền đủ thông tin nhận hàng. |
+| Phiên đăng nhập hết hạn | Đăng xuất rồi đăng nhập lại. |
